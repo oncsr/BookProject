@@ -16,13 +16,13 @@ import lombok.RequiredArgsConstructor;
 public class MemberService {
 	private final MemberRepository memberRepository;
 
-	// 이메일 검증 로직 (단위 테스트용)
-	public boolean isValidEmail(String email) {
+	// 이메일 검증 로직
+		public boolean isValidEmail(String email) {
 		if (email == null) return false;
 		return email.contains("@") && email.contains(".");
 	}
 
-	// 회원 등록 (예외 상황 테스트용)
+	// 회원 등록
 	public Member registerMember(String name, String email, MemberType type) {
 		if (!isValidEmail(email)) {
 			throw new InvalidEmailException("Invalid email format");
