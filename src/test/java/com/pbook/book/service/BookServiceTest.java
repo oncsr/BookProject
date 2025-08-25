@@ -1,6 +1,6 @@
 package com.pbook.book.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -44,8 +44,9 @@ class BookServiceTest {
         List<Book> result = bookService.searchBooksByAuthor(author);
         
         // Then
-        assertEquals(2, result.size()); // 빌릴 수 있는 책만 2권
-        assertTrue(result.stream().allMatch(Book::isAvailable));
+        assertThat(result)
+                .hasSize(2) // 빌릴 수 있는 책만 2권
+                .allMatch(Book::isAvailable);
         verify(bookRepository).findByAuthor(author);
     }
     
@@ -56,12 +57,9 @@ class BookServiceTest {
         String author = null;
         
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> bookService.searchBooksByAuthor(author)
-        );
-        
-        assertEquals("Author name cannot be empty", exception.getMessage());
+        assertThatThrownBy(() -> bookService.searchBooksByAuthor(author))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Author name cannot be empty");
         verify(bookRepository, never()).findByAuthor(any());
     }
     
@@ -72,12 +70,10 @@ class BookServiceTest {
         String author = "   "; // 공백만 있는 문자열
         
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> bookService.searchBooksByAuthor(author)
-        );
-        
-        assertEquals("Author name cannot be empty", exception.getMessage());
+        assertThatThrownBy(() -> bookService.searchBooksByAuthor(author))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Author name cannot be empty");
+
         verify(bookRepository, never()).findByAuthor(any());
     }
     
@@ -92,7 +88,7 @@ class BookServiceTest {
         List<Book> result = bookService.searchBooksByAuthor(author);
         
         // Then
-        assertTrue(result.isEmpty());
+        assertThat(result).isEmpty();
         verify(bookRepository).findByAuthor(author);
     }
     
@@ -112,7 +108,7 @@ class BookServiceTest {
         List<Book> result = bookService.searchBooksByAuthor(author);
         
         // Then
-        assertTrue(result.isEmpty());
+        assertThat(result).isEmpty();
         verify(bookRepository).findByAuthor(author);
     }
 }
