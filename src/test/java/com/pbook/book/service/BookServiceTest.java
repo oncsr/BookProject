@@ -26,7 +26,6 @@ class BookServiceTest {
     
     @InjectMocks private BookService bookService;
 
-
     @Test
     @DisplayName("정상적인 저자명으로 검색 - 빌릴 수 있는 책만 반환")
     void searchBooksByAuthor_정상검색_빌릴수있는책만반환() {
@@ -109,6 +108,130 @@ class BookServiceTest {
         // Then
         assertThat(result).isEmpty();
         verify(bookRepository).findByAuthor(author);
+    }
+
+    ///////////////////////////////////
+
+    @Test
+    @DisplayName("책이 없을 때 예외 발생")
+    void borrowBook_책없음_예외발생() {
+        // Given
+        long bookId = -1;
+
+        // When & Then
+        assertThatThrownBy(() -> bookService.borrowBook(bookId))
+            .isInstanceOf(BookNotFoundException.class)
+            .hasMessage("Book not found: " + bookId);
+        verify(bookRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("빌릴 수 없는 책일 때 예외 발생")
+    void borrowBook_빌릴수없는책_예외발생() {
+        // Given
+        long bookId = 1L;
+        Book book = Book.builder().title("책1").author("author").publishYear(2020).available(false).build();
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        // When & Then
+        assertThatThrownBy(() -> bookService.borrowBook(bookId))
+            .isInstanceOf(BookAlreadyBorrowedException.class)
+            .hasMessage("Book is already borrowed");
+        verify(bookRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("정상 대여")
+    void borrowBook_정상대여() {
+        // Given
+        long bookId = 1L;
+        Book book = Book.builder().title("책1").author("author").publishYear(2020).available(true).build();
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        // When
+        bookService.borrowBook(bookId);
+
+        // Then
+        verify(bookRepository, times(1)).save(book);
+    }
+
+    @Test
+    @DisplayName("클래식 도서 추천")
+    void generateBookRecommendation_클래식도서추천() {
+        // Given
+        Book book = Book.builder().title("책1").author("author").publishYear(1945).available(true).build();
+
+        // When
+        String result = bookService.generateBookRecommendation(book);
+
+        // Then
+        assertThat(result).isEqualTo("클래식 도서 추천: " + book.getDisplayName());
+    }
+
+    @Test
+    @DisplayName("신간 도서 추천")
+    void generateBookRecommendation_신간도서추천() {
+        // Given
+        Book book = Book.builder().title("책1").author("author").publishYear(2023).available(true).build();
+
+        // When
+        String result = bookService.generateBookRecommendation(book);
+
+        // Then
+        assertThat(result).isEqualTo("신간 도서 추천: " + book.getDisplayName());
+    }
+
+    @Test
+    @DisplayName("일반 도서 추천")
+    void generateBookRecommendation_일반도서추천() {
+        // Given
+        Book book = Book.builder().title("책1").author("author").publishYear(2015).available(true).build();
+
+        // When
+        String result = bookService.generateBookRecommendation(book);
+
+        // Then
+        assertThat(result).isEqualTo("일반 도서: " + book.getDisplayName());
+    }
+
+    ///////////////////////////////////
+
+    @Test
+    @DisplayName("이미 존재하는 책 등록")
+    void registerNewBook_이미존재하는책등록() {
+        // Given
+        String title = "제목1";
+        String author = "저자1";
+        int publishYear = 2020;
+        when(bookRepository.existsByTitleAndAuthor(title, author)).thenReturn(true);
+
+        // When
+        boolean result = bookService.registerNewBook(title, author, publishYear);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(bookRepository, times(1)).existsByTitleAndAuthor(title, author);
+        verify(bookRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("책 정상 등록")
+    void registerNewBook_책정상등록() {
+        // Given
+        String title = "제목1";
+        String author = "저자1";
+        int publishYear = 2020;
+        when(bookRepository.existsByTitleAndAuthor(title, author)).thenReturn(false);
+
+        // When
+        boolean result = bookService.registerNewBook(title, author, publishYear);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(bookRepository, times(1)).existsByTitleAndAuthor(title, author);
+        verify(bookRepository, times(1)).save(any());
     }
 
 }
